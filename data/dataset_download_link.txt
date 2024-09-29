@@ -1,0 +1,2 @@
+Subtitle Dataset: https://subtitlist.com/subs/naruto-season-1/english/2206507
+Transcript Dataset: https://www.kaggle.com/datasets/leonzatrax/naruto-ep-1-transcript

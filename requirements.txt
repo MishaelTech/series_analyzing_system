@@ -1,0 +1,9 @@
+scrapy==2.11.2
+beautifulsoup4==4.12.3
+transformers==4.44.0
+huggingface_hub==0.24.5
+nltk==3.8.1
+gradio==4.36.1
+pandas
+torch
+numpy
