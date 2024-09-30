@@ -33,6 +33,7 @@ def main():
                         # Create a placeholder for plot output
                         plot = gr.BarPlot(x="Theme", y="Score", title="Series Themes", tooltip=["Theme", "Score"],
                                           vertical=False)
+                    # For Input
                     with gr.Column():
                         theme_list = gr.Textbox(label="Themes (comma separated)")
                         subtitles_path = gr.Textbox(label="Subtitles or script path")
