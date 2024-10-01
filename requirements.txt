@@ -7,3 +7,4 @@ gradio==3.48.0
 pandas
 torch
 numpy
+pyvis==0.3.2
