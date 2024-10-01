@@ -48,18 +48,18 @@ class CharacterNetworkGenerator:
         relationship_df=relationship_df.head(200)
 
         # Transforming it to a network using networkx library
-        G=nx.from_pandas_edgelist(
+        G = nx.from_pandas_edgelist(
             relationship_df,
-            source="source",
-            target="target",
-            edge_attr="value",
+            source='source',
+            target='target',
+            edge_attr='value',
             create_using=nx.Graph()
         )
 
-        net = Network(notebook=True, width="1000px", height="700px", bgcolor="#222222", font_color="white",cdn_resources="remote")
+        net = Network(notebook=True, width="1000px", height="700px", bgcolor="#222222", font_color="white", cdn_resources="remote")
         node_degree = dict(G.degree)
 
-        nx.set_node_attributes(G, node_degree, "size")
+        nx.set_node_attributes(G, node_degree, 'size')
         net.from_nx(G)
         #net.show("character_network.html")
         # save it
@@ -69,7 +69,7 @@ class CharacterNetworkGenerator:
         html = net.generate_html()
 
         # Cleaning Html: In every single comma we have double quotation to not break the code
-        html=html.replace("'"," \"")
+        html = html.replace("'","\"")
 
         # An iframe to store the html
         output_html = f"""<iframe style="width: 100%; height: 600px;margin:0 auto" name="result" allow="midi; geolocation; microphone; camera;
