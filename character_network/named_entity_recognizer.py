@@ -8,13 +8,14 @@ import sys
 import pathlib
 
 folder_path = pathlib.Path().parent.resolve()
-# sys.path.append(os.path.join(folder_path, "series_analyzing_system"))
+#sys.path.append(os.path.join(folder_path, "series_analyzing_system"))
 sys.path.append(os.path.join(folder_path, "../"))
 
 from utils import load_subtitles_dataset
 
 # Download the 'punkt' resource
-nltk.download('punkt')
+# nltk.download('punkt')
+# python -m spacy download en_core_web_trf (add it on the terminal)
 
 
 class NamedEntityRecognition:
@@ -42,7 +43,7 @@ class NamedEntityRecognition:
             for entity in documents.ents:
                 if entity.label_ == "PERSON":
                     full_name = entity.text
-                    first_name = entity.text.split(" ")[0]
+                    first_name = full_name.split(" ")[0]
                     first_name = first_name.strip()
                     ners.add(first_name)
             ner_output.append(ners)
@@ -57,25 +58,12 @@ class NamedEntityRecognition:
 
         # Load Dataset
         df = load_subtitles_dataset(dataset_path)
+        #df=df.head(10)
 
         # Run Inference
         df["ners"] = df["script"].apply(self.get_ners_inference)
 
         if save_path is not None:
             df.to_csv(save_path, index=False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return df
 

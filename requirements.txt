@@ -4,7 +4,8 @@ transformers==4.44.0
 huggingface_hub==0.24.5
 nltk==3.8.1
 gradio==3.48.0
-pandas~=2.2.3
-torch~=2.4.1
-numpy~=1.26.4
+pandas
+torch
+numpy
 pyvis==0.3.2
+en-core-web-trf==3.7.3

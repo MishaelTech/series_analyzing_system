@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from pyvis.network import Network
 
+
 class CharacterNetworkGenerator:
     def __init__(self):
         pass
 
     # Occurence per character pair
-    def generate_character_network(df):
+    def generate_character_network(self,df):
 
         window=10 # if two charater appear in 10 sentences then we increment the counter
         entity_relationship=[]
