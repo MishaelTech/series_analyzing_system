@@ -43,6 +43,27 @@ def main():
                         get_themes_button.click(get_themes, inputs=[theme_list, subtitles_path, save_path],
                                                 outputs=[plot])
 
+
+        # Character Network Generator Section
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown("<h1>Character Network Generator (NERS & Graphs)</h1>")
+                with gr.Row():
+                    with gr.Column():
+                        # Create a placeholder for plot output
+                        network_html=gr.HTML()
+
+                    # For Input
+                    with gr.Column():
+                        subtitles_path = gr.Textbox(label="Subtitles or script path")
+                        ner_path = gr.Textbox(label="NERs Save Path")
+
+                        # Button to trigger theme classification
+                        get_network_graph_button = gr.Button("Get Character Network")
+                        get_themes_button = gr.Button("Get Themes")
+                        #get_themes_button.click(get_character_network, inputs=[subtitles_path, ner_path], outputs=[network_html])
+
+
     iface.launch(share=True)
 
 
