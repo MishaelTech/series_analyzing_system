@@ -1,0 +1,1 @@
+from .character_classifier import JutsuClassifier

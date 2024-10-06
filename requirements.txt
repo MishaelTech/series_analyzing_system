@@ -8,4 +8,7 @@ pandas
 torch
 numpy
 pyvis==0.3.2
+datasets
+evaluate==0.4.3
+python-dotenv==1.0.1
 en-core-web-trf==3.7.3
