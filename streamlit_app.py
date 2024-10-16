@@ -43,6 +43,8 @@ def classify_text(text_classification_model, text_classification_data_path, text
                                        huggingface_token=huggingface_token)
 
     output = jutsu_classifier.classify_jutsu(text_to_classify)
+    # remove the output from dict
+    output = output[0]
 
     return output
 
@@ -83,8 +85,14 @@ def main():
             classification_output = classify_text(text_classification_model, text_classification_data_path,
                                                   text_to_classify)
             st.text_area("Text Classification Output", value=classification_output, height=300)
+
+        elif text_classification_model and text_to_classify:
+            classification_output = classify_text(text_classification_model, text_classification_data_path,
+                                                  text_to_classify)
+            st.text_area("Text Classification Output", value=classification_output, height=300)
+
         else:
-            st.warning("Please fill all fields.")
+            st.warning("Please fill the required field")
 
 
 if __name__ == "__main__":

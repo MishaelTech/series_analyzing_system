@@ -59,6 +59,7 @@ def classify_text(text_classification_model, text_classification_data_path,text_
 
     # Run the classifier on the text and get the output
     output = jutsu_classifier.classify_jutsu(text_to_classify)
+    output = output[0]
 
     return output
 
