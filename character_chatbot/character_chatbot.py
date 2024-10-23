@@ -1,8 +1,10 @@
+from safetensors.torch import load_model
 import torch
 import huggingface_hub
 import pandas as pd
 import re
 from datasets import Dataset
+import transformers
 from transformers import (BitsAndBytesConfig, AutoModelForCausalLM, AutoTokenizer)
 from transformers.utils import quantization_config
 from peft import LoraConfig, PeftModel
@@ -40,26 +42,80 @@ class CharacterChatbot():
             print("Model not found in huggingface hub, we will train our own model")
 
             train_dataset = self.load_data()
-            # Train
 
-            # Load
+            # Train Model
+            self.train(self.base_model_path, train_dataset)
+
+            # Load Model
+            self.model = self.load_model(self.model_path)
+
+    def chat(self, message, history):
+        messages = []
+
+        # Add system prompt
+        messages.append(
+            """" Your are naruto from the anime "Naruto". Your responses should reflect his personalities and speech patterns \n""")
+
+        for message_and_response in history:
+            messages.append({"role": "user", "content": message_and_response[0]})
+            messages.append({"role": "assistant", "content": message_and_response[1]})
+
+        messages.append({"role": "user", "content": message})
+
+        # Add termination, so the model can terminate the genration
+        terminator = [
+            self.model.tokenizer.eos_token_id,
+            self.model.tokenizer.convert_tokens_to_ids("<|eot_id|>")
+        ]
+
+        output = self.model(
+            messages,
+            max_length=256,
+            eos_token_id=terminator,
+            do_sample=True,  # So we can have different response anytime we run it
+            temperature=0.6,  # How random the output will be
+            top_p=0.9
+        )
+
+        output_message = output[0]["generated_text"][-1]
+        return output_message
+
+    def load_model(self, model_path):
+        # We load the model into 4bit instead of 32 or 64bit so it can fit into memory (We will lose accuracy). Therefore we will use bit and bite config
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16
+        )
+
+        # We use pipeline so it wouldn't convert the text to number
+        pipeline = transformers.pipeline(
+            "text-generation",
+            model=model_path,
+            model_kwargs={
+                "torch_dtype": torch.float16,
+                "quantizarion_config": bnb_config,
+            }
+        )
+
+        return pipeline
 
     # Train Function
     def train(
-        self, 
-        base_model_name_or_path, 
-        dataset,
-        output_dir="./results", 
-        per_device_train_batch_size=1, 
-        gradient_accumulation_steps=1,
-        optimizer="paged_adamw_32bit", 
-        save_steps=200, 
-        logging_steps=10, 
-        learning_rate=2e-4, 
-        max_grad_norm=0.3, 
-        max_steps=300, 
-        warmup_ratio=0.3, 
-        learning_rate_schedular_type="constant",):
+            self,
+            base_model_name_or_path,
+            dataset,
+            output_dir="./results",
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=1,
+            optimizer="paged_adamw_32bit",
+            save_steps=200,
+            logging_steps=10,
+            learning_rate=2e-4,
+            max_grad_norm=0.3,
+            max_steps=300,
+            warmup_ratio=0.3,
+            learning_rate_schedular_type="constant", ):
 
         # We load the model into 4bit instead of 32 or 64bit so it can fit into memory (We will lose accuracy). Therefore we will use bit and bite config
         bnb_config = BitsAndBytesConfig(
@@ -69,35 +125,35 @@ class CharacterChatbot():
         )
 
         model = AutoModelForCausalLM.from_pretrained(
-            base_model_name_or_path, 
+            base_model_name_or_path,
             quantization_config=bnb_config,
             trust_remote_code=True
         )
 
-        #Not using any cache but getting from the hugging face hub directly
-        model.config.use_cache=False
+        # Not using any cache but getting from the hugging face hub directly
+        model.config.use_cache = False
 
         # Making use of the tokenizer
         tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
         # Having the padding token
-        tokenizer.psd_token = tokenizer.eos_token # Ending of state padding token EOS
+        tokenizer.pad_token = tokenizer.eos_token  # Ending of state padding token EOS
 
         # Lora config that enables us to have somE additional width next to the model that will be trained and it will enhance the model instead of training the full model which will take alot of time
         lora_alpha = 16
         lora_dropout = 0.1
-        lora_r=64
+        lora_r = 64
 
-        # We will use peft for lora config 
-        peft_config=LoraConfig(
+        # We will use peft for lora config
+        peft_config = LoraConfig(
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
             r=lora_r,
-            bias=None,
+            bias="none",
             task_type="CASUAL_LM",
         )
 
         # Intializing the training argument
-        training_arguments=SFTConfig(
+        training_arguments = SFTConfig(
             output_dir=output_dir,
             per_device_train_batch_size=per_device_train_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
@@ -108,7 +164,7 @@ class CharacterChatbot():
             max_grad_norm=max_grad_norm,
             max_steps=max_steps,
             warmup_ratio=warmup_ratio,
-            group_by_length=True, # Make it more optimized, similar length to each other
+            group_by_length=True,  # Make it more optimized, similar length to each other
             lr_scheduler_type=learning_rate_schedular_type,
             report_to="none"
         )
@@ -116,13 +172,13 @@ class CharacterChatbot():
         max_seq_len = 512
 
         trainer = SFTTrainer(
-            model=model,
+            model = model,
             train_dataset=dataset,
             peft_config=peft_config,
             dataset_text_field="prompt",
             max_seq_length=max_seq_len,
             tokenizer=tokenizer,
-            args=training_arguments
+            args = training_arguments,
         )
 
         trainer.train()
@@ -136,8 +192,27 @@ class CharacterChatbot():
         gc.collect()
 
         # Read the model and add the ckpt width we said
-        base_model = AutoModelForCausalLM.from_pretrained(self.base_model_path)
-    
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_model_name_or_path,
+            return_dict=True,
+            quantization_config=bnb_config,
+            device_map=self.device
+        )
+
+        # Load the tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
+
+        # PeftModel
+        model = PeftModel.from_pretrained(base_model, "final_ckpt")
+
+        # Push to huggingface so we can use easily
+        model.push_to_hub(self.model_path)
+        tokenizer.push_to_hub(self.model_path)
+
+        # Flush Memory
+        del model, base_model
+        gc.collect()
+
     # Load Function
     def load_data(self):
         naruto_transcript_df = pd.read_csv(self.data_path)
@@ -155,11 +230,11 @@ class CharacterChatbot():
         # Naruto respond flag, so anything that has naruto and the word is greater than 5
         naruto_transcript_df['naruto_respond_flag'] = 0
         naruto_transcript_df.loc[(naruto_transcript_df['name'] == 'Naruto') & (
-                    naruto_transcript_df["number_of_words"] > 5), "naruto_respond_flag"] = 1
+                naruto_transcript_df["number_of_words"] > 5), "naruto_respond_flag"] = 1
 
         # Picking the indexes and Excluding the first row because its just intializing coversation
         indexes_to_take = list(naruto_transcript_df[(naruto_transcript_df['naruto_respond_flag'] == 1) & (
-                    naruto_transcript_df.index > 0)].index)
+                naruto_transcript_df.index > 0)].index)
 
         # Create the prompt we will feed through the chatbot so it can act as naruto, and give it the statement set to naruto and the response so it can imitate it
 

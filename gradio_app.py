@@ -8,6 +8,8 @@ import os
 # from dotenv import load_dotenv
 # load_dotenv()
 
+from character_chatbot import CharacterChatbot
+
 
 def get_themes(theme_list_str,subtitles_path,save_path):
     # Convert input string to a list of themes
@@ -50,10 +52,9 @@ def get_character_network(subtitles_path, ner_path):
 
     return html
 
-
 def classify_text(text_classification_model, text_classification_data_path,text_to_classify):
     # huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
-    huggingface_token = os.getenv('HUGGINGFACE_TOKEN')  # Replace 'your_default_token' with a default if desir
+      # Replace 'your_default_token' with a default if desir
 
     jutsu_classifier = JutsuClassifier(model_path = text_classification_model, data_path = text_classification_data_path, huggingface_token = huggingface_token) # huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
@@ -63,6 +64,13 @@ def classify_text(text_classification_model, text_classification_data_path,text_
 
     return output
 
+
+def chat_with_character_chatbot(message, history):
+    character_chatbot = CharacterChatbot("Mishael/Naruto_Llama-3-8B", huggingface_token = huggingface_token)
+
+    output = character_chatbot.chat(message, history)
+    output = output["content"].strip()
+    return output
 
 
 def main():
@@ -124,6 +132,12 @@ def main():
                         classify_text_button = gr.Button("Classify Text (Jutsu)")
                         classify_text_button.click(classify_text, inputs=[text_classification_model, text_classification_data_path, text_to_classify], outputs=[text_classification_output])
 
+
+        # Character Chatbot Section
+        with gr.Row():
+            with gr.Column():
+                gr.HTML("<h1>Character Chatbot</h1>")
+                gr.ChatInterface(chat_with_character_chatbot)
 
     iface.launch(share=True)
 

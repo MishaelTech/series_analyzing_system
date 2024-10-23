@@ -1,4 +1,5 @@
 import streamlit as st
+import gradio as gr
 import pandas as pd
 import os
 from dotenv import load_dotenv
@@ -7,6 +8,7 @@ load_dotenv()
 from theme_classifier import ThemeClassifier
 from character_network import NamedEntityRecognition, CharacterNetworkGenerator
 from text_classification import JutsuClassifier
+from character_chatbot import CharacterChatbot
 
 
 def get_themes(theme_list_str, subtitles_path, save_path):
@@ -36,7 +38,7 @@ def get_character_network(subtitles_path, ner_path):
 
 def classify_text(text_classification_model, text_classification_data_path, text_to_classify):
     #huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
-    huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
+    #huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
     jutsu_classifier = JutsuClassifier(model_path=text_classification_model,
                                        data_path=text_classification_data_path,
@@ -46,6 +48,14 @@ def classify_text(text_classification_model, text_classification_data_path, text
     # remove the output from dict
     output = output[0]
 
+    return output
+
+
+def chat_with_character_chatbot(message, history):
+    character_chatbot = CharacterChatbot("MishaelTech1/Naruto_Llama-3-8B", huggingface_token = huggingface_token)
+
+    output = character_chatbot.chat(message, history)
+    output = output["content"].strip()
     return output
 
 
@@ -93,6 +103,16 @@ def main():
 
         else:
             st.warning("Please fill the required field")
+
+
+    st.header("Character Chatbot")
+    chat_interface = gr.ChatInterface(chat_with_character_chatbot)
+
+    # Launch the Gradio interface and get the URL
+    gradio_url = chat_interface.launch(share=True, inline=False)
+
+    # Display the Gradio interface in Streamlit
+    st.markdown(f'<iframe src="{gradio_url}" width="100%" height="500px"></iframe>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
