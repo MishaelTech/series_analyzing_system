@@ -10,6 +10,10 @@ from character_network import NamedEntityRecognition, CharacterNetworkGenerator
 from text_classification import JutsuClassifier
 from character_chatbot import CharacterChatbot
 
+huggingface_token = ""
+#huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
+#huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
+
 
 def get_themes(theme_list_str, subtitles_path, save_path):
     theme_list = theme_list_str.split(',')
@@ -37,8 +41,6 @@ def get_character_network(subtitles_path, ner_path):
 
 
 def classify_text(text_classification_model, text_classification_data_path, text_to_classify):
-    #huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
-    #huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
     jutsu_classifier = JutsuClassifier(model_path=text_classification_model,
                                        data_path=text_classification_data_path,
@@ -51,12 +53,22 @@ def classify_text(text_classification_model, text_classification_data_path, text
     return output
 
 
+# def chat_with_character_chatbot(message, history):
+#     character_chatbot = CharacterChatbot("MishaelTech1/Naruto_Llama-3-8B", huggingface_token=huggingface_token)
+
+#     # Ensure history is formatted as a list of dictionaries with correct keys
+#     formatted_history = [{"role": msg["role"], "content": msg["content"]} for msg in history]
+#     output = character_chatbot.chat(message, formatted_history)
+#     return output
+
 def chat_with_character_chatbot(message, history):
-    character_chatbot = CharacterChatbot("MishaelTech1/Naruto_Llama-3-8B", huggingface_token = huggingface_token)
+    character_chatbot = CharacterChatbot("MishaelTech1/Naruto_Llama-3-8B", huggingface_token=huggingface_token)
 
     output = character_chatbot.chat(message, history)
-    output = output["content"].strip()
+    output = output['content'].strip()
     return output
+
+
 
 
 def main():
@@ -105,14 +117,52 @@ def main():
             st.warning("Please fill the required field")
 
 
+    # Chatbot header
     st.header("Character Chatbot")
-    chat_interface = gr.ChatInterface(chat_with_character_chatbot)
 
-    # Launch the Gradio interface and get the URL
-    gradio_url = chat_interface.launch(share=True, inline=False)
+    # Initialize chat history if it doesn't exist in session state
+    if "messages" not in st.session_state:
+        st.session_state.messages = []  # This will store the history of chat messages
 
-    # Display the Gradio interface in Streamlit
-    st.markdown(f'<iframe src="{gradio_url}" width="100%" height="500px"></iframe>', unsafe_allow_html=True)
+    # Display chat messages from the history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # User input text box
+    user_input = st.text_input("You:")
+
+    if user_input:
+        # Prepare the message history for the chatbot
+        history = [{"role": msg["role"], "content": msg["content"]} for msg in st.session_state.messages]
+
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        # Display user message immediately
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # Display a loading spinner while generating a response
+        with st.spinner("Assistant is typing..."):
+            response = chat_with_character_chatbot(user_input, history)
+
+        # Add chatbot's response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+        # Display chatbot's response
+        with st.chat_message("assistant"):
+            st.markdown(response)
+
+
+    # st.header("Character Chatbot")
+    # chat_interface = gr.ChatInterface(chat_with_character_chatbot)
+
+    # # Launch the Gradio interface and get the URL
+    # gradio_url = chat_interface.launch(share=True, inline=False)
+
+    # # Display the Gradio interface in Streamlit
+    # st.markdown(f'<iframe src="{gradio_url}" width="100%" height="500px"></iframe>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

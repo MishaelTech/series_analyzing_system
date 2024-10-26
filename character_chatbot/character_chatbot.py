@@ -50,35 +50,25 @@ class CharacterChatbot():
             self.model = self.load_model(self.model_path)
 
     def chat(self, message, history):
-        messages = []
+        # Prepare prompt for chatbot
+        prompt = """"You are Naruto from the anime "Naruto." Your responses should reflect his personality and speech patterns.\n"""
 
-        # Add system prompt
-        messages.append(
-            """" Your are naruto from the anime "Naruto". Your responses should reflect his personalities and speech patterns \n""")
-
+        # Add the conversation history
         for message_and_response in history:
-            messages.append({"role": "user", "content": message_and_response[0]})
-            messages.append({"role": "assistant", "content": message_and_response[1]})
+            prompt += f"User: {message_and_response['content']}\n"
+            prompt += f"Naruto: {message_and_response.get('response', '')}\n"
 
-        messages.append({"role": "user", "content": message})
+        prompt += f"User: {message}\nNaruto:"
 
-        # Add termination, so the model can terminate the genration
-        terminator = [
-            self.model.tokenizer.eos_token_id,
-            self.model.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-        ]
+        # Call the model using the pipeline
+        output = self.model(prompt, max_length=256, do_sample=True, temperature=0.6, top_p=0.9)
 
-        output = self.model(
-            messages,
-            max_length=256,
-            eos_token_id=terminator,
-            do_sample=True,  # So we can have different response anytime we run it
-            temperature=0.6,  # How random the output will be
-            top_p=0.9
-        )
+        # Extract and return the generated response
+        output_message = output[0]["generated_text"]
+        return {"content": output_message}
 
-        output_message = output[0]["generated_text"][-1]
-        return output_message
+
+
 
     def load_model(self, model_path):
         # We load the model into 4bit instead of 32 or 64bit so it can fit into memory (We will lose accuracy). Therefore we will use bit and bite config
@@ -94,7 +84,7 @@ class CharacterChatbot():
             model=model_path,
             model_kwargs={
                 "torch_dtype": torch.float16,
-                "quantizarion_config": bnb_config,
+                "quantization_config": bnb_config,
             }
         )
 

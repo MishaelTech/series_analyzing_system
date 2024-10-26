@@ -10,6 +10,9 @@ import os
 
 from character_chatbot import CharacterChatbot
 
+huggingface_token = ""
+#huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
+#huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
 def get_themes(theme_list_str,subtitles_path,save_path):
     # Convert input string to a list of themes
@@ -53,10 +56,12 @@ def get_character_network(subtitles_path, ner_path):
     return html
 
 def classify_text(text_classification_model, text_classification_data_path,text_to_classify):
-    # huggingface_token = os.getenv("HUGGINGFACE_TOKEN", " ")
-      # Replace 'your_default_token' with a default if desir
 
-    jutsu_classifier = JutsuClassifier(model_path = text_classification_model, data_path = text_classification_data_path, huggingface_token = huggingface_token) # huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
+    jutsu_classifier = JutsuClassifier(
+        model_path = text_classification_model,
+        data_path = text_classification_data_path,
+        huggingface_token = huggingface_token
+    )
 
     # Run the classifier on the text and get the output
     output = jutsu_classifier.classify_jutsu(text_to_classify)
